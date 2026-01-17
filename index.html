@@ -34,6 +34,10 @@
             height: 100%;
         }
 
+        #gameCanvas.playing {
+            cursor: none;
+        }
+
         #ui {
             position: absolute;
             top: 0;
@@ -952,6 +956,11 @@
         // Свайп
         let isSlicing = false;
         let slicePoints = [];
+        
+        // Позиция курсора для кирки
+        let cursorX = 0;
+        let cursorY = 0;
+        let showCursor = false;
 
         function handleStart(e) {
             if (!gameRunning) return;
@@ -959,6 +968,9 @@
             slicePoints = [];
             const pos = getPos(e);
             slicePoints.push({ x: pos.x, y: pos.y, time: Date.now() });
+            cursorX = pos.x;
+            cursorY = pos.y;
+            showCursor = true;
         }
 
         function handleMove(e) {
@@ -966,6 +978,9 @@
             e.preventDefault();
             
             const pos = getPos(e);
+            cursorX = pos.x;
+            cursorY = pos.y;
+            showCursor = true;
             slicePoints.push({ x: pos.x, y: pos.y, time: Date.now() });
             
             if (slicePoints.length > 20) {
@@ -979,6 +994,35 @@
             isSlicing = false;
             slicePoints = [];
             comboCount = 0;
+        }
+        
+        // Рисуем кирку ⛏️
+        function drawPickaxe() {
+            if (!showCursor || !gameRunning) return;
+            
+            ctx.save();
+            ctx.translate(cursorX, cursorY);
+            
+            // Поворачиваем кирку при свайпе
+            if (isSlicing && slicePoints.length >= 2) {
+                const lastPoint = slicePoints[slicePoints.length - 1];
+                const prevPoint = slicePoints[slicePoints.length - 2];
+                const angle = Math.atan2(lastPoint.y - prevPoint.y, lastPoint.x - prevPoint.x);
+                ctx.rotate(angle + Math.PI / 4);
+            } else {
+                ctx.rotate(-Math.PI / 4); // Угол покоя
+            }
+            
+            ctx.font = '50px Arial';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            
+            // Тень
+            ctx.shadowColor = '#ffd700';
+            ctx.shadowBlur = isSlicing ? 25 : 10;
+            
+            ctx.fillText('⛏️', 0, 0);
+            ctx.restore();
         }
 
         function getPos(e) {
@@ -1168,6 +1212,7 @@
             document.getElementById('menu').style.display = 'none';
             document.getElementById('gameOver').style.display = 'none';
             document.getElementById('timer').classList.remove('warning');
+            canvas.classList.add('playing');
             
             money = 0;
             fruitsSliced = 0;
@@ -1205,6 +1250,8 @@
             gameRunning = false;
             clearInterval(spawnInterval);
             clearInterval(gameTimer);
+            canvas.classList.remove('playing');
+            showCursor = false;
             
             // Сохраняем лучший результат
             if (money > bestMoney) {
@@ -1265,20 +1312,61 @@
 
             // След
             drawSliceTrail();
+            
+            // Кирка
+            drawPickaxe();
 
             requestAnimationFrame(gameLoop);
         }
 
+        // Отслеживание курсора (для отображения кирки)
+        function trackCursor(e) {
+            if (!gameRunning) return;
+            const pos = getPos(e);
+            cursorX = pos.x;
+            cursorY = pos.y;
+            showCursor = true;
+        }
+
         // События
         canvas.addEventListener('mousedown', handleStart);
-        canvas.addEventListener('mousemove', handleMove);
+        canvas.addEventListener('mousemove', (e) => {
+            trackCursor(e);
+            if (isSlicing) handleMove(e);
+        });
         canvas.addEventListener('mouseup', handleEnd);
-        canvas.addEventListener('mouseleave', handleEnd);
+        canvas.addEventListener('mouseleave', () => {
+            handleEnd();
+            showCursor = false;
+        });
 
-        canvas.addEventListener('touchstart', handleStart, { passive: false });
-        canvas.addEventListener('touchmove', handleMove, { passive: false });
-        canvas.addEventListener('touchend', handleEnd);
-        canvas.addEventListener('touchcancel', handleEnd);
+        canvas.addEventListener('touchstart', (e) => {
+            handleStart(e);
+            const pos = getPos(e);
+            cursorX = pos.x;
+            cursorY = pos.y;
+            showCursor = true;
+        }, { passive: false });
+        
+        canvas.addEventListener('touchmove', (e) => {
+            handleMove(e);
+            if (gameRunning) {
+                const pos = getPos(e);
+                cursorX = pos.x;
+                cursorY = pos.y;
+                showCursor = true;
+            }
+        }, { passive: false });
+        
+        canvas.addEventListener('touchend', () => {
+            handleEnd();
+            showCursor = false;
+        });
+        
+        canvas.addEventListener('touchcancel', () => {
+            handleEnd();
+            showCursor = false;
+        });
     </script>
 </body>
 </html>
