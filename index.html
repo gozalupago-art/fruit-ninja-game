@@ -557,7 +557,7 @@
 
         // === ГОЛОСОВОЕ ПРИВЕТСТВИЕ (качественный аудиофайл) ===
         let welcomePlayed = false;
-        const welcomeAudio = new Audio('welcome.mp3');
+        const welcomeAudio = new Audio('welcome.mp3.mp3');
         welcomeAudio.volume = 0.9;
         
         function playWelcome() {
@@ -958,7 +958,7 @@
         
         // Определяем мобильное устройство и масштаб
         const isMobile = window.innerWidth <= 768 || 'ontouchstart' in window;
-        const sizeScale = isMobile ? 0.5 : 1.0; // 50% размер на мобильных
+        const sizeScale = isMobile ? 0.5 : 0.8; // 50% на мобильных, 80% на ПК (-20%)
 
         // Game state
         let gameRunning = false;
