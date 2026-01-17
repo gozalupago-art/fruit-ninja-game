@@ -1,1 +1,1163 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>💰 Золотая Лихорадка</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            touch-action: none;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+
+        body {
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+            min-height: 100vh;
+            overflow: hidden;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        #gameContainer {
+            position: relative;
+            width: 100vw;
+            height: 100vh;
+        }
+
+        #gameCanvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+        }
+
+        #ui {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            padding: 15px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            z-index: 10;
+        }
+
+        .stat-box {
+            background: rgba(0, 0, 0, 0.6);
+            backdrop-filter: blur(10px);
+            border-radius: 15px;
+            padding: 12px 18px;
+            color: white;
+            border: 2px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .stat-row {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 16px;
+            margin: 4px 0;
+        }
+
+        .stat-row span {
+            font-weight: bold;
+        }
+
+        .money { color: #4cd137; }
+        .score { color: #ffd700; }
+
+        #lives {
+            display: flex;
+            gap: 5px;
+        }
+
+        .heart {
+            font-size: 24px;
+            filter: drop-shadow(0 0 5px rgba(255, 0, 0, 0.5));
+            transition: all 0.3s;
+        }
+
+        .heart.lost {
+            opacity: 0.3;
+            transform: scale(0.8);
+        }
+
+        /* Меню */
+        #menu, #gameOver {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.9);
+            backdrop-filter: blur(20px);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 100;
+            padding: 20px;
+        }
+
+        .menu-title {
+            font-size: 48px;
+            margin-bottom: 10px;
+            animation: bounce 1s infinite;
+        }
+
+        @keyframes bounce {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
+        }
+
+        .menu-subtitle {
+            color: #aaa;
+            font-size: 16px;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        /* Таблица наград */
+        .rewards-table {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 15px;
+            padding: 15px;
+            margin-bottom: 25px;
+            width: 100%;
+            max-width: 320px;
+        }
+
+        .rewards-title {
+            color: #ffd700;
+            font-size: 16px;
+            text-align: center;
+            margin-bottom: 12px;
+            font-weight: bold;
+        }
+
+        .reward-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 10px;
+            border-radius: 8px;
+            margin: 4px 0;
+            color: white;
+            font-size: 14px;
+        }
+
+        .reward-row:nth-child(odd) {
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        .reward-emoji {
+            font-size: 24px;
+        }
+
+        .reward-name {
+            flex: 1;
+            margin-left: 10px;
+        }
+
+        .reward-price {
+            color: #4cd137;
+            font-weight: bold;
+        }
+
+        .reward-speed {
+            color: #74b9ff;
+            font-size: 12px;
+            margin-left: 10px;
+        }
+
+        .menu-btn {
+            background: linear-gradient(135deg, #4cd137, #44bd32);
+            border: none;
+            color: white;
+            font-size: 22px;
+            font-weight: bold;
+            padding: 18px 50px;
+            border-radius: 50px;
+            cursor: pointer;
+            margin: 10px;
+            box-shadow: 0 10px 30px rgba(76, 209, 55, 0.4);
+            transition: all 0.3s;
+        }
+
+        .menu-btn:hover {
+            transform: scale(1.05);
+        }
+
+        .menu-btn:active {
+            transform: scale(0.95);
+        }
+
+        .menu-btn.secondary {
+            background: linear-gradient(135deg, #ff6b6b, #ee5a24);
+            box-shadow: 0 10px 30px rgba(238, 90, 36, 0.4);
+        }
+
+        #gameOver {
+            display: none;
+        }
+
+        .game-over-title {
+            color: #ff6b6b;
+            font-size: 36px;
+            font-weight: bold;
+            margin-bottom: 20px;
+        }
+
+        .earnings-box {
+            background: linear-gradient(135deg, #4cd137, #44bd32);
+            border-radius: 20px;
+            padding: 20px 40px;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .earnings-label {
+            color: rgba(255, 255, 255, 0.8);
+            font-size: 14px;
+        }
+
+        .earnings-amount {
+            color: white;
+            font-size: 42px;
+            font-weight: bold;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-bottom: 25px;
+            width: 100%;
+            max-width: 300px;
+        }
+
+        .stat-card {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            padding: 12px;
+            text-align: center;
+        }
+
+        .stat-card-value {
+            color: #ffd700;
+            font-size: 24px;
+            font-weight: bold;
+        }
+
+        .stat-card-label {
+            color: #aaa;
+            font-size: 12px;
+        }
+
+        /* Всплывающие награды */
+        .floating-reward {
+            position: absolute;
+            font-size: 20px;
+            font-weight: bold;
+            color: #4cd137;
+            text-shadow: 0 0 10px rgba(76, 209, 55, 0.8);
+            pointer-events: none;
+            animation: floatUp 1s ease-out forwards;
+            z-index: 60;
+        }
+
+        @keyframes floatUp {
+            0% { opacity: 1; transform: translateY(0) scale(1); }
+            100% { opacity: 0; transform: translateY(-80px) scale(1.3); }
+        }
+
+        /* Комбо */
+        #combo {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 48px;
+            font-weight: bold;
+            color: #ffd700;
+            text-shadow: 0 0 30px rgba(255, 215, 0, 0.8);
+            opacity: 0;
+            pointer-events: none;
+            z-index: 50;
+            text-align: center;
+        }
+
+        #combo.show {
+            animation: comboAnim 1s ease-out;
+        }
+
+        @keyframes comboAnim {
+            0% { opacity: 1; transform: translate(-50%, -50%) scale(0.5); }
+            50% { opacity: 1; transform: translate(-50%, -50%) scale(1.2); }
+            100% { opacity: 0; transform: translate(-50%, -50%) scale(1.5) translateY(-50px); }
+        }
+
+        .combo-bonus {
+            font-size: 24px;
+            color: #4cd137;
+        }
+
+        /* Таймер игры */
+        #timer {
+            position: absolute;
+            top: 80px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0, 0, 0, 0.6);
+            padding: 8px 20px;
+            border-radius: 20px;
+            color: white;
+            font-size: 18px;
+            font-weight: bold;
+            z-index: 10;
+        }
+
+        #timer.warning {
+            color: #ff6b6b;
+            animation: pulse 0.5s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: translateX(-50%) scale(1); }
+            50% { transform: translateX(-50%) scale(1.1); }
+        }
+
+        /* Взрыв с волной (для динамита) */
+        .explosion-wave {
+            position: absolute;
+            border-radius: 50%;
+            border: 4px solid #ff4444;
+            pointer-events: none;
+            animation: explosionWave 0.6s ease-out forwards;
+            z-index: 55;
+        }
+
+        @keyframes explosionWave {
+            0% { 
+                width: 20px; 
+                height: 20px; 
+                opacity: 1;
+                border-width: 8px;
+                box-shadow: 0 0 30px #ff4444, inset 0 0 30px rgba(255,68,68,0.5);
+            }
+            100% { 
+                width: 300px; 
+                height: 300px; 
+                opacity: 0;
+                border-width: 2px;
+                box-shadow: 0 0 60px transparent;
+            }
+        }
+
+        /* Искры (для обычных предметов) */
+        .spark {
+            position: absolute;
+            width: 6px;
+            height: 6px;
+            background: #ffd700;
+            border-radius: 50%;
+            pointer-events: none;
+            box-shadow: 0 0 10px #ffd700, 0 0 20px #ffa500;
+            animation: sparkFly 0.5s ease-out forwards;
+            z-index: 55;
+        }
+
+        @keyframes sparkFly {
+            0% { 
+                opacity: 1; 
+                transform: translate(0, 0) scale(1);
+            }
+            100% { 
+                opacity: 0; 
+                transform: translate(var(--tx), var(--ty)) scale(0);
+            }
+        }
+
+        /* Молния (для бриллианта) */
+        .lightning {
+            position: absolute;
+            pointer-events: none;
+            z-index: 55;
+            animation: lightningFlash 0.4s ease-out forwards;
+        }
+
+        .lightning-bolt {
+            position: absolute;
+            width: 4px;
+            background: linear-gradient(to bottom, #00d4ff, #ffffff, #00d4ff);
+            box-shadow: 0 0 20px #00d4ff, 0 0 40px #00d4ff, 0 0 60px #ffffff;
+            transform-origin: top center;
+        }
+
+        @keyframes lightningFlash {
+            0% { opacity: 1; }
+            20% { opacity: 1; }
+            40% { opacity: 0.3; }
+            60% { opacity: 1; }
+            80% { opacity: 0.5; }
+            100% { opacity: 0; }
+        }
+
+        /* Экран тряски при взрыве */
+        @keyframes screenShake {
+            0%, 100% { transform: translateX(0); }
+            10%, 30%, 50%, 70%, 90% { transform: translateX(-5px); }
+            20%, 40%, 60%, 80% { transform: translateX(5px); }
+        }
+
+        .shake {
+            animation: screenShake 0.3s ease-out;
+        }
+    </style>
+</head>
+<body>
+    <div id="gameContainer">
+        <canvas id="gameCanvas"></canvas>
+        
+        <div id="ui">
+            <div class="stat-box">
+                <div class="stat-row">
+                    <span>💰</span>
+                    <span class="money" id="money">0.00 ₽</span>
+                </div>
+                <div class="stat-row">
+                    <span>🎯</span>
+                    <span class="score" id="score">0</span>
+                </div>
+            </div>
+            <div id="lives">
+                <span class="heart">❤️</span>
+                <span class="heart">❤️</span>
+                <span class="heart">❤️</span>
+            </div>
+        </div>
+
+        <div id="timer">⏱️ 30</div>
+        <div id="combo"></div>
+
+        <div id="menu">
+            <div class="menu-title">💰🔥</div>
+            <h1 style="color: white; font-size: 28px; margin-bottom: 5px;">ЗОЛОТАЯ ЛИХОРАДКА</h1>
+            <p class="menu-subtitle">Лови сокровища — зарабатывай рубли!</p>
+            
+            <div class="rewards-table">
+                <div class="rewards-title">💎 НАГРАДЫ ЗА СОКРОВИЩА</div>
+                <div class="reward-row">
+                    <span class="reward-emoji">💎</span>
+                    <span class="reward-name">Бриллиант</span>
+                    <span class="reward-price">+100 ₽</span>
+                    <span class="reward-speed">редкий!</span>
+                </div>
+                <div class="reward-row">
+                    <span class="reward-emoji">💰</span>
+                    <span class="reward-name">Мешок золота</span>
+                    <span class="reward-price">+50 ₽</span>
+                    <span class="reward-speed">медл.</span>
+                </div>
+                <div class="reward-row">
+                    <span class="reward-emoji">💵</span>
+                    <span class="reward-name">Купюра</span>
+                    <span class="reward-price">+20 ₽</span>
+                    <span class="reward-speed">средн.</span>
+                </div>
+                <div class="reward-row">
+                    <span class="reward-emoji">🪙</span>
+                    <span class="reward-name">Монета</span>
+                    <span class="reward-price">+15 ₽</span>
+                    <span class="reward-speed">средн.</span>
+                </div>
+                <div class="reward-row">
+                    <span class="reward-emoji">🥇</span>
+                    <span class="reward-name">Медаль</span>
+                    <span class="reward-price">+10 ₽</span>
+                    <span class="reward-speed">быстр.</span>
+                </div>
+                <div class="reward-row">
+                    <span class="reward-emoji">⭐</span>
+                    <span class="reward-name">Звезда</span>
+                    <span class="reward-price">+5 ₽</span>
+                    <span class="reward-speed">оч.быстр.</span>
+                </div>
+                <div class="reward-row" style="background: rgba(255,0,0,0.2);">
+                    <span class="reward-emoji">🧨</span>
+                    <span class="reward-name">Динамит</span>
+                    <span class="reward-price" style="color: #ff6b6b;">−50% и ❤️</span>
+                    <span class="reward-speed">опасно!</span>
+                </div>
+            </div>
+            
+            <button class="menu-btn" onclick="startGame()">▶️ ИГРАТЬ</button>
+        </div>
+
+        <div id="gameOver">
+            <div class="game-over-title">🏁 РАУНД ОКОНЧЕН!</div>
+            
+            <div class="earnings-box">
+                <div class="earnings-label">Вы заработали:</div>
+                <div class="earnings-amount" id="finalMoney">0.00 ₽</div>
+            </div>
+            
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-card-value" id="finalFruits">0</div>
+                    <div class="stat-card-label">Сокровищ</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-card-value" id="finalCombo">0x</div>
+                    <div class="stat-card-label">Макс. комбо</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-card-value" id="finalAccuracy">0%</div>
+                    <div class="stat-card-label">Точность</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-card-value" id="finalBest">0 ₽</div>
+                    <div class="stat-card-label">Лучший</div>
+                </div>
+            </div>
+            
+            <button class="menu-btn" onclick="startGame()">🔄 ЕЩЁ РАЗ</button>
+            <button class="menu-btn secondary" onclick="claimReward()">💰 ЗАБРАТЬ</button>
+        </div>
+    </div>
+
+    <script>
+        // Telegram Web App
+        const tg = window.Telegram?.WebApp;
+        if (tg) {
+            tg.expand();
+            tg.ready();
+        }
+
+        // Canvas setup
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+
+        function resizeCanvas() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        }
+        resizeCanvas();
+        window.addEventListener('resize', resizeCanvas);
+
+        // === НАСТРОЙКИ ФРУКТОВ И НАГРАД ===
+        const FRUIT_CONFIG = {
+            diamond: {
+                emoji: '💎',
+                name: 'Бриллиант',
+                reward: 100.00,      // 100 рублей - супер редкий!
+                size: 140,
+                color: '#00d4ff',
+                speed: 0.6,          // Очень медленный
+                spawnChance: 0.03,   // 3% - очень редкий
+            },
+            gold: {
+                emoji: '💰',
+                name: 'Мешок золота',
+                reward: 50.00,       // 50 рублей
+                size: 130,
+                color: '#ffd700',
+                speed: 0.7,          // Медленный
+                spawnChance: 0.07,   // 7% - редкий
+            },
+            cash: {
+                emoji: '💵',
+                name: 'Купюра',
+                reward: 20.00,       // 20 рублей
+                size: 110,
+                color: '#27ae60',
+                speed: 0.9,
+                spawnChance: 0.15,
+            },
+            coin: {
+                emoji: '🪙',
+                name: 'Монета',
+                reward: 15.00,       // 15 рублей
+                size: 100,
+                color: '#f39c12',
+                speed: 1.0,
+                spawnChance: 0.25,
+            },
+            medal: {
+                emoji: '🥇',
+                name: 'Медаль',
+                reward: 10.00,       // 10 рублей
+                size: 95,
+                color: '#e67e22',
+                speed: 1.2,          // Быстрый
+                spawnChance: 0.25,
+            },
+            star: {
+                emoji: '⭐',
+                name: 'Звезда',
+                reward: 5.00,        // 5 рублей
+                size: 90,
+                color: '#f1c40f',
+                speed: 1.4,          // Очень быстрый
+                spawnChance: 0.25,
+            },
+        };
+
+        const BOMB = {
+            emoji: '🧨',
+            name: 'Динамит',
+            size: 110,
+            color: '#e74c3c',
+            speed: 1.0,
+            spawnChance: 0.24,       // 24% шанс динамита (x2)
+        };
+
+        // Game settings
+        const GAME_DURATION = 30;    // 30 секунд на раунд
+        const COMBO_MULTIPLIER = 0.5; // +50% за каждый комбо уровень
+
+        // Game state
+        let gameRunning = false;
+        let money = 0;
+        let fruitsSliced = 0;
+        let fruitsMissed = 0;
+        let lives = 3;
+        let bestMoney = parseFloat(localStorage.getItem('fruitNinjaBestMoney')) || 0;
+        let fruits = [];
+        let particles = [];
+        let comboCount = 0;
+        let maxCombo = 0;
+        let lastSliceTime = 0;
+        let timeLeft = GAME_DURATION;
+        let gameTimer = null;
+
+        // Статистика по фруктам
+        let fruitStats = {};
+
+        function getRandomFruit() {
+            const rand = Math.random();
+            let cumulative = 0;
+            
+            // Сначала проверяем бомбу
+            if (rand < BOMB.spawnChance) {
+                return { ...BOMB, isBomb: true };
+            }
+            
+            cumulative = BOMB.spawnChance;
+            
+            // Затем фрукты
+            for (const [key, fruit] of Object.entries(FRUIT_CONFIG)) {
+                cumulative += fruit.spawnChance;
+                if (rand < cumulative) {
+                    return { ...fruit, key, isBomb: false };
+                }
+            }
+            
+            // По умолчанию яблоко
+            return { ...FRUIT_CONFIG.apple, key: 'apple', isBomb: false };
+        }
+
+        class Fruit {
+            constructor() {
+                this.type = getRandomFruit();
+                this.isBomb = this.type.isBomb;
+                
+                this.x = Math.random() * (canvas.width - 100) + 50;
+                this.y = canvas.height + 50;
+                this.size = this.type.size;
+                this.rotation = 0;
+                this.rotationSpeed = (Math.random() - 0.5) * 0.2;
+                
+                // Физика с учётом скорости фрукта
+                const baseSpeed = this.type.speed;
+                this.vx = (Math.random() - 0.5) * 8;
+                this.vy = (-16 - Math.random() * 6) * baseSpeed;
+                this.gravity = 0.35 * baseSpeed;
+                
+                this.sliced = false;
+                this.opacity = 1;
+            }
+
+            update() {
+                this.vy += this.gravity;
+                this.x += this.vx;
+                this.y += this.vy;
+                this.rotation += this.rotationSpeed;
+
+                if (this.sliced) {
+                    this.opacity -= 0.05;
+                }
+
+                return this.y < canvas.height + 100 && this.opacity > 0;
+            }
+
+            draw() {
+                ctx.save();
+                ctx.translate(this.x, this.y);
+                ctx.rotate(this.rotation);
+                ctx.globalAlpha = this.opacity;
+                ctx.font = `${this.size}px Arial`;
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                
+                // Тень
+                ctx.shadowColor = this.type.color;
+                ctx.shadowBlur = 20;
+                
+                ctx.fillText(this.type.emoji, 0, 0);
+                ctx.restore();
+            }
+
+            checkSlice(x, y) {
+                if (this.sliced) return false;
+                const dist = Math.hypot(x - this.x, y - this.y);
+                return dist < this.size;
+            }
+
+            slice() {
+                this.sliced = true;
+                
+                // Частицы
+                for (let i = 0; i < 12; i++) {
+                    particles.push(new Particle(this.x, this.y, this.type.color));
+                }
+            }
+        }
+
+        // === ЭФФЕКТЫ ===
+        
+        // Взрыв с волной (для динамита)
+        function createExplosion(x, y) {
+            // Создаём несколько волн
+            for (let i = 0; i < 3; i++) {
+                setTimeout(() => {
+                    const wave = document.createElement('div');
+                    wave.className = 'explosion-wave';
+                    wave.style.left = `${x}px`;
+                    wave.style.top = `${y}px`;
+                    wave.style.marginLeft = '-10px';
+                    wave.style.marginTop = '-10px';
+                    document.getElementById('gameContainer').appendChild(wave);
+                    setTimeout(() => wave.remove(), 600);
+                }, i * 100);
+            }
+            
+            // Тряска экрана
+            document.getElementById('gameContainer').classList.add('shake');
+            setTimeout(() => {
+                document.getElementById('gameContainer').classList.remove('shake');
+            }, 300);
+        }
+
+        // Искры (для обычных предметов)
+        function createSparks(x, y, color) {
+            const sparkCount = 12;
+            for (let i = 0; i < sparkCount; i++) {
+                const spark = document.createElement('div');
+                spark.className = 'spark';
+                spark.style.left = `${x}px`;
+                spark.style.top = `${y}px`;
+                spark.style.background = color;
+                spark.style.boxShadow = `0 0 10px ${color}, 0 0 20px ${color}`;
+                
+                // Случайное направление
+                const angle = (i / sparkCount) * Math.PI * 2;
+                const distance = 50 + Math.random() * 50;
+                spark.style.setProperty('--tx', `${Math.cos(angle) * distance}px`);
+                spark.style.setProperty('--ty', `${Math.sin(angle) * distance}px`);
+                
+                document.getElementById('gameContainer').appendChild(spark);
+                setTimeout(() => spark.remove(), 500);
+            }
+        }
+
+        // Молния (для бриллианта)
+        function createLightning(x, y) {
+            const container = document.createElement('div');
+            container.className = 'lightning';
+            container.style.left = `${x}px`;
+            container.style.top = `${y}px`;
+            
+            // Создаём несколько молний в разные стороны
+            for (let i = 0; i < 6; i++) {
+                const bolt = document.createElement('div');
+                bolt.className = 'lightning-bolt';
+                const angle = (i / 6) * Math.PI * 2;
+                const length = 80 + Math.random() * 60;
+                bolt.style.height = `${length}px`;
+                bolt.style.transform = `rotate(${angle}rad)`;
+                bolt.style.left = '0px';
+                bolt.style.top = '0px';
+                container.appendChild(bolt);
+            }
+            
+            document.getElementById('gameContainer').appendChild(container);
+            setTimeout(() => container.remove(), 400);
+            
+            // Дополнительные искры
+            createSparks(x, y, '#00d4ff');
+        }
+
+        class Particle {
+            constructor(x, y, color) {
+                this.x = x;
+                this.y = y;
+                this.color = color;
+                this.size = Math.random() * 8 + 4;
+                this.vx = (Math.random() - 0.5) * 15;
+                this.vy = (Math.random() - 0.5) * 15;
+                this.gravity = 0.3;
+                this.opacity = 1;
+                this.decay = 0.02 + Math.random() * 0.02;
+            }
+
+            update() {
+                this.vy += this.gravity;
+                this.x += this.vx;
+                this.y += this.vy;
+                this.opacity -= this.decay;
+                return this.opacity > 0;
+            }
+
+            draw() {
+                ctx.save();
+                ctx.globalAlpha = this.opacity;
+                ctx.fillStyle = this.color;
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.restore();
+            }
+        }
+
+        // Свайп
+        let isSlicing = false;
+        let slicePoints = [];
+
+        function handleStart(e) {
+            if (!gameRunning) return;
+            isSlicing = true;
+            slicePoints = [];
+            const pos = getPos(e);
+            slicePoints.push({ x: pos.x, y: pos.y, time: Date.now() });
+        }
+
+        function handleMove(e) {
+            if (!gameRunning || !isSlicing) return;
+            e.preventDefault();
+            
+            const pos = getPos(e);
+            slicePoints.push({ x: pos.x, y: pos.y, time: Date.now() });
+            
+            if (slicePoints.length > 20) {
+                slicePoints.shift();
+            }
+
+            checkCollisions(pos.x, pos.y);
+        }
+
+        function handleEnd() {
+            isSlicing = false;
+            slicePoints = [];
+            comboCount = 0;
+        }
+
+        function getPos(e) {
+            const rect = canvas.getBoundingClientRect();
+            const touch = e.touches ? e.touches[0] : e;
+            return {
+                x: (touch.clientX - rect.left) * (canvas.width / rect.width),
+                y: (touch.clientY - rect.top) * (canvas.height / rect.height)
+            };
+        }
+
+        function checkCollisions(x, y) {
+            const now = Date.now();
+
+            fruits.forEach(fruit => {
+                if (!fruit.sliced && fruit.checkSlice(x, y)) {
+                    if (fruit.isBomb) {
+                        // Динамит! Теряем жизнь + 50% заработка
+                        fruit.slice();
+                        
+                        // Эффект взрыва
+                        createExplosion(fruit.x, fruit.y);
+                        
+                        // Теряем 50% денег
+                        const penalty = money * 0.5;
+                        money -= penalty;
+                        if (money < 0) money = 0;
+                        
+                        // Теряем жизнь
+                        lives--;
+                        updateLives();
+                        
+                        showFloatingText(fruit.x, fruit.y, `💥 -${penalty.toFixed(2)} ₽`, '#ff6b6b');
+                        updateUI();
+                        
+                        // Вибрация если доступна
+                        if (navigator.vibrate) navigator.vibrate(300);
+                        
+                        // Проверяем конец игры
+                        if (lives <= 0) {
+                            endGame();
+                        }
+                        return;
+                    }
+
+                    fruit.slice();
+                    fruitsSliced++;
+                    
+                    // Эффект в зависимости от типа
+                    if (fruit.type.key === 'diamond') {
+                        // Бриллиант - молния!
+                        createLightning(fruit.x, fruit.y);
+                    } else {
+                        // Остальные - искры
+                        createSparks(fruit.x, fruit.y, fruit.type.color);
+                    }
+                    
+                    // Комбо
+                    if (now - lastSliceTime < 400) {
+                        comboCount++;
+                        if (comboCount > maxCombo) maxCombo = comboCount;
+                        if (comboCount >= 2) {
+                            showCombo(comboCount);
+                        }
+                    } else {
+                        comboCount = 1;
+                    }
+                    lastSliceTime = now;
+
+                    // Рассчитываем награду с комбо
+                    let reward = fruit.type.reward;
+                    if (comboCount > 1) {
+                        reward *= (1 + (comboCount - 1) * COMBO_MULTIPLIER);
+                    }
+                    
+                    money += reward;
+                    
+                    // Статистика
+                    if (fruit.type.key) {
+                        fruitStats[fruit.type.key] = (fruitStats[fruit.type.key] || 0) + 1;
+                    }
+
+                    // Показываем награду
+                    const comboText = comboCount > 1 ? ` x${comboCount}` : '';
+                    showFloatingText(fruit.x, fruit.y, `+${reward.toFixed(2)} ₽${comboText}`, '#4cd137');
+                    
+                    updateUI();
+                }
+            });
+        }
+
+        function showFloatingText(x, y, text, color) {
+            const div = document.createElement('div');
+            div.className = 'floating-reward';
+            div.textContent = text;
+            div.style.left = `${x}px`;
+            div.style.top = `${y}px`;
+            div.style.color = color;
+            document.getElementById('gameContainer').appendChild(div);
+            
+            setTimeout(() => div.remove(), 1000);
+        }
+
+        function showCombo(count) {
+            const combo = document.getElementById('combo');
+            const bonus = Math.round((count - 1) * COMBO_MULTIPLIER * 100);
+            combo.innerHTML = `${count}x COMBO!<br><span class="combo-bonus">+${bonus}% к наградам</span>`;
+            combo.classList.remove('show');
+            void combo.offsetWidth;
+            combo.classList.add('show');
+        }
+
+        function updateUI() {
+            document.getElementById('money').textContent = `${money.toFixed(2)} ₽`;
+            document.getElementById('score').textContent = fruitsSliced;
+        }
+
+        function updateTimer() {
+            const timerEl = document.getElementById('timer');
+            timerEl.textContent = `⏱️ ${timeLeft}`;
+            
+            if (timeLeft <= 10) {
+                timerEl.classList.add('warning');
+            }
+        }
+
+        function updateLives() {
+            const hearts = document.querySelectorAll('.heart');
+            hearts.forEach((heart, i) => {
+                heart.classList.toggle('lost', i >= lives);
+            });
+        }
+
+        function spawnFruit() {
+            if (!gameRunning) return;
+            
+            const count = Math.floor(Math.random() * 2) + 1;
+            for (let i = 0; i < count; i++) {
+                setTimeout(() => {
+                    if (gameRunning) fruits.push(new Fruit());
+                }, i * 150);
+            }
+        }
+
+        function drawSliceTrail() {
+            if (slicePoints.length < 2) return;
+
+            ctx.save();
+            ctx.lineCap = 'round';
+            ctx.lineJoin = 'round';
+
+            for (let i = 1; i < slicePoints.length; i++) {
+                const p1 = slicePoints[i - 1];
+                const p2 = slicePoints[i];
+                const age = Date.now() - p2.time;
+                const opacity = Math.max(0, 1 - age / 200);
+                const width = Math.max(2, 15 * opacity);
+
+                ctx.beginPath();
+                ctx.strokeStyle = `rgba(255, 255, 255, ${opacity})`;
+                ctx.lineWidth = width;
+                ctx.moveTo(p1.x, p1.y);
+                ctx.lineTo(p2.x, p2.y);
+                ctx.stroke();
+
+                ctx.beginPath();
+                ctx.strokeStyle = `rgba(76, 209, 55, ${opacity * 0.8})`;
+                ctx.lineWidth = width * 0.4;
+                ctx.moveTo(p1.x, p1.y);
+                ctx.lineTo(p2.x, p2.y);
+                ctx.stroke();
+            }
+            ctx.restore();
+        }
+
+        let spawnInterval;
+
+        function startGame() {
+            document.getElementById('menu').style.display = 'none';
+            document.getElementById('gameOver').style.display = 'none';
+            document.getElementById('timer').classList.remove('warning');
+            
+            money = 0;
+            fruitsSliced = 0;
+            fruitsMissed = 0;
+            lives = 3;
+            fruits = [];
+            particles = [];
+            comboCount = 0;
+            maxCombo = 0;
+            timeLeft = GAME_DURATION;
+            fruitStats = {};
+            gameRunning = true;
+            
+            updateUI();
+            updateLives();
+            updateTimer();
+            
+            // Спавн фруктов
+            spawnInterval = setInterval(spawnFruit, 1000);
+            
+            // Таймер игры
+            gameTimer = setInterval(() => {
+                timeLeft--;
+                updateTimer();
+                
+                if (timeLeft <= 0) {
+                    endGame();
+                }
+            }, 1000);
+            
+            gameLoop();
+        }
+
+        function endGame() {
+            gameRunning = false;
+            clearInterval(spawnInterval);
+            clearInterval(gameTimer);
+            
+            // Сохраняем лучший результат
+            if (money > bestMoney) {
+                bestMoney = money;
+                localStorage.setItem('fruitNinjaBestMoney', bestMoney.toFixed(2));
+            }
+            
+            // Точность
+            const totalFruits = fruitsSliced + fruitsMissed;
+            const accuracy = totalFruits > 0 ? Math.round((fruitsSliced / totalFruits) * 100) : 0;
+            
+            document.getElementById('finalMoney').textContent = `${money.toFixed(2)} ₽`;
+            document.getElementById('finalFruits').textContent = fruitsSliced;
+            document.getElementById('finalCombo').textContent = `${maxCombo}x`;
+            document.getElementById('finalAccuracy').textContent = `${accuracy}%`;
+            document.getElementById('finalBest').textContent = `${bestMoney.toFixed(2)} ₽`;
+            document.getElementById('gameOver').style.display = 'flex';
+        }
+
+        function claimReward() {
+            // Отправляем результат в Telegram бот
+            if (tg) {
+                const data = {
+                    action: 'claim',
+                    money: money,
+                    fruitsSliced: fruitsSliced,
+                    maxCombo: maxCombo,
+                    fruitStats: fruitStats,
+                };
+                tg.sendData(JSON.stringify(data));
+                tg.close();
+            } else {
+                alert(`Награда: ${money.toFixed(2)} ₽ будет зачислена на ваш баланс!`);
+            }
+        }
+
+        function gameLoop() {
+            if (!gameRunning) return;
+
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // Частицы
+            particles = particles.filter(p => p.update());
+            particles.forEach(p => p.draw());
+
+            // Фрукты
+            fruits = fruits.filter(fruit => {
+                const alive = fruit.update();
+                
+                // Пропущенные предметы (только для статистики, жизни не теряем)
+                if (!alive && !fruit.sliced && !fruit.isBomb) {
+                    fruitsMissed++;
+                }
+                
+                fruit.draw();
+                return alive;
+            });
+
+            // След
+            drawSliceTrail();
+
+            requestAnimationFrame(gameLoop);
+        }
+
+        // События
+        canvas.addEventListener('mousedown', handleStart);
+        canvas.addEventListener('mousemove', handleMove);
+        canvas.addEventListener('mouseup', handleEnd);
+        canvas.addEventListener('mouseleave', handleEnd);
+
+        canvas.addEventListener('touchstart', handleStart, { passive: false });
+        canvas.addEventListener('touchmove', handleMove, { passive: false });
+        canvas.addEventListener('touchend', handleEnd);
+        canvas.addEventListener('touchcancel', handleEnd);
+    </script>
+</body>
+</html>
+
 
