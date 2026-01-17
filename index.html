@@ -660,23 +660,26 @@
         // === ФОНОВАЯ МУЗЫКА (джекпот стиль) ===
         let bgMusicInterval = null;
         let bgMusicGain = null;
-        let currentBPM = 120;
+        let currentBPM = 156; // +30% от 120
         let beatIndex = 0;
+        let isIntenseMode = false;
         
-        // Ноты для джекпот мелодии (пентатоника)
-        const jackpotNotes = [261.63, 293.66, 329.63, 392.00, 440.00, 523.25];
-        const bassNotes = [130.81, 146.83, 164.81, 196.00];
+        // Ноты для джекпот мелодии (расширенная гамма)
+        const jackpotNotes = [261.63, 293.66, 329.63, 349.23, 392.00, 440.00, 493.88, 523.25];
+        const bassNotes = [130.81, 146.83, 164.81, 174.61, 196.00, 220.00];
+        const highNotes = [523.25, 587.33, 659.25, 783.99, 880.00];
+        const chordNotes = [[261.63, 329.63, 392.00], [293.66, 349.23, 440.00], [329.63, 392.00, 493.88]];
         
         function startBackgroundMusic() {
             if (!audioCtx) return;
             
-            // Громкость фона 50% от эффектов (эффекты 0.3, фон 0.15)
             bgMusicGain = audioCtx.createGain();
             bgMusicGain.gain.setValueAtTime(0.15, audioCtx.currentTime);
             bgMusicGain.connect(audioCtx.destination);
             
-            currentBPM = 120;
+            currentBPM = 156;
             beatIndex = 0;
+            isIntenseMode = false;
             
             playMusicBeat();
             bgMusicInterval = setInterval(playMusicBeat, 60000 / currentBPM);
@@ -687,7 +690,7 @@
             
             const now = audioCtx.currentTime;
             
-            // Бас на каждый удар
+            // === БАС (глубокий) ===
             if (beatIndex % 2 === 0) {
                 const bassOsc = audioCtx.createOscillator();
                 const bassGain = audioCtx.createGain();
@@ -698,31 +701,54 @@
                 const bassNote = bassNotes[Math.floor(beatIndex / 2) % bassNotes.length];
                 bassOsc.frequency.setValueAtTime(bassNote, now);
                 
-                bassGain.gain.setValueAtTime(0.4, now);
-                bassGain.gain.exponentialRampToValueAtTime(0.01, now + 0.3);
+                bassGain.gain.setValueAtTime(isIntenseMode ? 0.5 : 0.35, now);
+                bassGain.gain.exponentialRampToValueAtTime(0.01, now + 0.25);
                 
                 bassOsc.start(now);
-                bassOsc.stop(now + 0.3);
+                bassOsc.stop(now + 0.25);
             }
             
-            // Мелодия джекпот
-            const melodySc = audioCtx.createOscillator();
+            // === МЕЛОДИЯ (главная) ===
+            const melodyOsc = audioCtx.createOscillator();
             const melodyGain = audioCtx.createGain();
-            melodySc.connect(melodyGain);
+            melodyOsc.connect(melodyGain);
             melodyGain.connect(bgMusicGain);
             
-            melodySc.type = 'square';
+            melodyOsc.type = isIntenseMode ? 'sawtooth' : 'square';
             const noteIndex = (beatIndex + Math.floor(Math.random() * 3)) % jackpotNotes.length;
-            melodySc.frequency.setValueAtTime(jackpotNotes[noteIndex], now);
+            melodyOsc.frequency.setValueAtTime(jackpotNotes[noteIndex], now);
             
-            melodyGain.gain.setValueAtTime(0.2, now);
-            melodyGain.gain.exponentialRampToValueAtTime(0.01, now + 0.15);
+            melodyGain.gain.setValueAtTime(isIntenseMode ? 0.25 : 0.18, now);
+            melodyGain.gain.exponentialRampToValueAtTime(0.01, now + 0.12);
             
-            melodySc.start(now);
-            melodySc.stop(now + 0.15);
+            melodyOsc.start(now);
+            melodyOsc.stop(now + 0.12);
             
-            // Перкуссия (шейкер)
-            if (beatIndex % 4 === 2) {
+            // === АРПЕДЖИО (каждый 4-й удар) ===
+            if (beatIndex % 4 === 0) {
+                const chord = chordNotes[Math.floor(beatIndex / 4) % chordNotes.length];
+                chord.forEach((note, i) => {
+                    setTimeout(() => {
+                        if (!audioCtx || !bgMusicGain) return;
+                        const arpOsc = audioCtx.createOscillator();
+                        const arpGain = audioCtx.createGain();
+                        arpOsc.connect(arpGain);
+                        arpGain.connect(bgMusicGain);
+                        
+                        arpOsc.type = 'triangle';
+                        arpOsc.frequency.setValueAtTime(note * (isIntenseMode ? 2 : 1), audioCtx.currentTime);
+                        
+                        arpGain.gain.setValueAtTime(0.12, audioCtx.currentTime);
+                        arpGain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.15);
+                        
+                        arpOsc.start(audioCtx.currentTime);
+                        arpOsc.stop(audioCtx.currentTime + 0.15);
+                    }, i * 50);
+                });
+            }
+            
+            // === ПЕРКУССИЯ (шейкер + кик) ===
+            if (beatIndex % 4 === 2 || (isIntenseMode && beatIndex % 2 === 1)) {
                 const bufferSize = audioCtx.sampleRate * 0.05;
                 const buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
                 const output = buffer.getChannelData(0);
@@ -735,24 +761,80 @@
                 const shakerGain = audioCtx.createGain();
                 shaker.connect(shakerGain);
                 shakerGain.connect(bgMusicGain);
-                shakerGain.gain.setValueAtTime(0.15, now);
+                shakerGain.gain.setValueAtTime(isIntenseMode ? 0.2 : 0.12, now);
                 
                 shaker.start(now);
+            }
+            
+            // === ВЫСОКИЕ НОТЫ (блеск, каждый 8-й удар) ===
+            if (beatIndex % 8 === 0) {
+                const highOsc = audioCtx.createOscillator();
+                const highGain = audioCtx.createGain();
+                highOsc.connect(highGain);
+                highGain.connect(bgMusicGain);
+                
+                highOsc.type = 'sine';
+                highOsc.frequency.setValueAtTime(highNotes[beatIndex % highNotes.length], now);
+                
+                highGain.gain.setValueAtTime(0.1, now);
+                highGain.gain.exponentialRampToValueAtTime(0.01, now + 0.3);
+                
+                highOsc.start(now);
+                highOsc.stop(now + 0.3);
             }
             
             beatIndex++;
         }
         
-        // Ускоряем музыку на последних 10 секундах
+        // Музыкальный переход на последних 10 секундах
         function intensifyMusic() {
-            if (!bgMusicInterval) return;
+            if (!bgMusicInterval || !audioCtx) return;
             
+            isIntenseMode = true;
+            
+            // Эффект перехода - свип вверх
+            const sweepOsc = audioCtx.createOscillator();
+            const sweepGain = audioCtx.createGain();
+            sweepOsc.connect(sweepGain);
+            sweepGain.connect(bgMusicGain);
+            
+            sweepOsc.type = 'sawtooth';
+            sweepOsc.frequency.setValueAtTime(200, audioCtx.currentTime);
+            sweepOsc.frequency.exponentialRampToValueAtTime(1200, audioCtx.currentTime + 0.5);
+            
+            sweepGain.gain.setValueAtTime(0.25, audioCtx.currentTime);
+            sweepGain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.6);
+            
+            sweepOsc.start(audioCtx.currentTime);
+            sweepOsc.stop(audioCtx.currentTime + 0.6);
+            
+            // Барабанная дробь
+            for (let i = 0; i < 8; i++) {
+                setTimeout(() => {
+                    if (!audioCtx || !bgMusicGain) return;
+                    const bufferSize = audioCtx.sampleRate * 0.03;
+                    const buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
+                    const output = buffer.getChannelData(0);
+                    for (let j = 0; j < bufferSize; j++) {
+                        output[j] = (Math.random() * 2 - 1) * (1 - j / bufferSize);
+                    }
+                    const drum = audioCtx.createBufferSource();
+                    drum.buffer = buffer;
+                    const drumGain = audioCtx.createGain();
+                    drum.connect(drumGain);
+                    drumGain.connect(bgMusicGain);
+                    drumGain.gain.setValueAtTime(0.3, audioCtx.currentTime);
+                    drum.start(audioCtx.currentTime);
+                }, i * 60);
+            }
+            
+            // Ускоряем темп
             clearInterval(bgMusicInterval);
-            currentBPM = 180; // Ускоряем темп!
+            currentBPM = 200; // Быстрый финал!
             
-            // Увеличиваем громкость
+            // Увеличиваем громкость плавно
             if (bgMusicGain) {
-                bgMusicGain.gain.setValueAtTime(0.22, audioCtx.currentTime);
+                bgMusicGain.gain.linearRampToValueAtTime(0.25, audioCtx.currentTime + 0.5);
             }
             
             bgMusicInterval = setInterval(playMusicBeat, 60000 / currentBPM);
@@ -764,6 +846,7 @@
                 bgMusicInterval = null;
             }
             bgMusicGain = null;
+            isIntenseMode = false;
         }
 
         // Звук взрыва динамита
@@ -1360,6 +1443,21 @@
         }
 
         let spawnInterval;
+        let spawnRate = 1000; // Базовая скорость спавна (мс)
+        
+        // Ускоряем спавн на 30% в финале
+        function intensifySpawn() {
+            clearInterval(spawnInterval);
+            spawnRate = 700; // 30% быстрее (1000 * 0.7)
+            spawnInterval = setInterval(spawnFruit, spawnRate);
+            
+            // Сразу спавним пачку предметов для эффекта
+            for (let i = 0; i < 3; i++) {
+                setTimeout(() => {
+                    if (gameRunning) fruits.push(new Fruit());
+                }, i * 100);
+            }
+        }
 
         function startGame() {
             // Инициализируем звук при первом взаимодействии
@@ -1390,16 +1488,18 @@
             updateTimer();
             
             // Спавн фруктов
-            spawnInterval = setInterval(spawnFruit, 1000);
+            spawnRate = 1000; // Сбрасываем скорость
+            spawnInterval = setInterval(spawnFruit, spawnRate);
             
             // Таймер игры
             gameTimer = setInterval(() => {
                 timeLeft--;
                 updateTimer();
                 
-                // Ускоряем музыку на последних 10 секундах!
+                // Ускоряем музыку и спавн на последних 10 секундах!
                 if (timeLeft === 10) {
                     intensifyMusic();
+                    intensifySpawn(); // Ускоряем выпадение предметов на 30%
                 }
                 
                 if (timeLeft <= 0) {
