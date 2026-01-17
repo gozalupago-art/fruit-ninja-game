@@ -538,6 +538,121 @@
             tg.ready();
         }
 
+        // === ЗВУКОВАЯ СИСТЕМА ===
+        const AudioContext = window.AudioContext || window.webkitAudioContext;
+        let audioCtx = null;
+
+        function initAudio() {
+            if (!audioCtx) {
+                audioCtx = new AudioContext();
+            }
+            if (audioCtx.state === 'suspended') {
+                audioCtx.resume();
+            }
+        }
+
+        // Звук сбора обычного сокровища (дзинь)
+        function playCollectSound() {
+            if (!audioCtx) return;
+            
+            const oscillator = audioCtx.createOscillator();
+            const gainNode = audioCtx.createGain();
+            
+            oscillator.connect(gainNode);
+            gainNode.connect(audioCtx.destination);
+            
+            oscillator.type = 'sine';
+            oscillator.frequency.setValueAtTime(880, audioCtx.currentTime);
+            oscillator.frequency.exponentialRampToValueAtTime(1320, audioCtx.currentTime + 0.1);
+            
+            gainNode.gain.setValueAtTime(0.3, audioCtx.currentTime);
+            gainNode.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.2);
+            
+            oscillator.start(audioCtx.currentTime);
+            oscillator.stop(audioCtx.currentTime + 0.2);
+        }
+
+        // Звук бриллианта (ча-чинг!)
+        function playDiamondSound() {
+            if (!audioCtx) return;
+            
+            // Первый тон
+            const osc1 = audioCtx.createOscillator();
+            const gain1 = audioCtx.createGain();
+            osc1.connect(gain1);
+            gain1.connect(audioCtx.destination);
+            
+            osc1.type = 'sine';
+            osc1.frequency.setValueAtTime(1200, audioCtx.currentTime);
+            osc1.frequency.exponentialRampToValueAtTime(1800, audioCtx.currentTime + 0.1);
+            
+            gain1.gain.setValueAtTime(0.4, audioCtx.currentTime);
+            gain1.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.3);
+            
+            osc1.start(audioCtx.currentTime);
+            osc1.stop(audioCtx.currentTime + 0.3);
+            
+            // Второй тон (ча-чинг!)
+            const osc2 = audioCtx.createOscillator();
+            const gain2 = audioCtx.createGain();
+            osc2.connect(gain2);
+            gain2.connect(audioCtx.destination);
+            
+            osc2.type = 'triangle';
+            osc2.frequency.setValueAtTime(1600, audioCtx.currentTime + 0.1);
+            osc2.frequency.exponentialRampToValueAtTime(2400, audioCtx.currentTime + 0.2);
+            
+            gain2.gain.setValueAtTime(0, audioCtx.currentTime);
+            gain2.gain.setValueAtTime(0.35, audioCtx.currentTime + 0.1);
+            gain2.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.4);
+            
+            osc2.start(audioCtx.currentTime + 0.1);
+            osc2.stop(audioCtx.currentTime + 0.4);
+        }
+
+        // Звук взрыва динамита
+        function playExplosionSound() {
+            if (!audioCtx) return;
+            
+            // Шум для взрыва
+            const bufferSize = audioCtx.sampleRate * 0.5;
+            const buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
+            const output = buffer.getChannelData(0);
+            
+            for (let i = 0; i < bufferSize; i++) {
+                output[i] = Math.random() * 2 - 1;
+            }
+            
+            const noise = audioCtx.createBufferSource();
+            noise.buffer = buffer;
+            
+            const noiseGain = audioCtx.createGain();
+            noise.connect(noiseGain);
+            noiseGain.connect(audioCtx.destination);
+            
+            noiseGain.gain.setValueAtTime(0.5, audioCtx.currentTime);
+            noiseGain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.4);
+            
+            noise.start(audioCtx.currentTime);
+            noise.stop(audioCtx.currentTime + 0.4);
+            
+            // Низкий басовый удар
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(150, audioCtx.currentTime);
+            osc.frequency.exponentialRampToValueAtTime(30, audioCtx.currentTime + 0.3);
+            
+            gain.gain.setValueAtTime(0.6, audioCtx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.3);
+            
+            osc.start(audioCtx.currentTime);
+            osc.stop(audioCtx.currentTime + 0.3);
+        }
+
         // Canvas setup
         const canvas = document.getElementById('gameCanvas');
         const ctx = canvas.getContext('2d');
@@ -884,6 +999,9 @@
                         // Динамит! Теряем жизнь + 50% заработка
                         fruit.slice();
                         
+                        // Звук взрыва
+                        playExplosionSound();
+                        
                         // Эффект взрыва
                         createExplosion(fruit.x, fruit.y);
                         
@@ -912,13 +1030,15 @@
                     fruit.slice();
                     fruitsSliced++;
                     
-                    // Эффект в зависимости от типа
+                    // Эффект и звук в зависимости от типа
                     if (fruit.type.key === 'diamond') {
-                        // Бриллиант - молния!
+                        // Бриллиант - молния + особый звук!
                         createLightning(fruit.x, fruit.y);
+                        playDiamondSound();
                     } else {
-                        // Остальные - искры
+                        // Остальные - искры + обычный звук
                         createSparks(fruit.x, fruit.y, fruit.type.color);
+                        playCollectSound();
                     }
                     
                     // Комбо
@@ -1042,6 +1162,9 @@
         let spawnInterval;
 
         function startGame() {
+            // Инициализируем звук при первом взаимодействии
+            initAudio();
+            
             document.getElementById('menu').style.display = 'none';
             document.getElementById('gameOver').style.display = 'none';
             document.getElementById('timer').classList.remove('warning');
