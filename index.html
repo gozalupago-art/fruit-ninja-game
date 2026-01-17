@@ -470,7 +470,7 @@
                     <span class="reward-speed">средн.</span>
                 </div>
                 <div class="reward-row">
-                    <span class="reward-emoji">🪙</span>
+                    <span class="reward-emoji">🟡</span>
                     <span class="reward-name">Монета</span>
                     <span class="reward-price">+15 ₽</span>
                     <span class="reward-speed">средн.</span>
@@ -579,7 +579,7 @@
                 spawnChance: 0.15,
             },
             coin: {
-                emoji: '🪙',
+                emoji: '🟡',
                 name: 'Монета',
                 reward: 15.00,       // 15 рублей
                 size: 100,
@@ -672,10 +672,10 @@
                 this.rotation = 0;
                 this.rotationSpeed = (Math.random() - 0.5) * 0.2;
                 
-                // Физика с учётом скорости фрукта
+                // Физика с учётом скорости фрукта (+30% высота от оригинала)
                 const baseSpeed = this.type.speed;
                 this.vx = (Math.random() - 0.5) * 8;
-                this.vy = (-16 - Math.random() * 6) * baseSpeed;
+                this.vy = (-21 - Math.random() * 8) * baseSpeed;
                 this.gravity = 0.35 * baseSpeed;
                 
                 this.sliced = false;
@@ -1159,5 +1159,3 @@
     </script>
 </body>
 </html>
-
-
