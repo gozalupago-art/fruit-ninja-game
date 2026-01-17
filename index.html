@@ -555,6 +555,49 @@
             }
         }
 
+        // === ГОЛОСОВОЕ ПРИВЕТСТВИЕ ===
+        let welcomeSpoken = false;
+        
+        function speakWelcome() {
+            if (welcomeSpoken) return;
+            if (!('speechSynthesis' in window)) return;
+            
+            welcomeSpoken = true;
+            
+            const utterance = new SpeechSynthesisUtterance('Самозанятый желает Вам удачи!');
+            utterance.lang = 'ru-RU';
+            utterance.rate = 0.9;  // Немного медленнее
+            utterance.pitch = 1.2; // Выше тон (женский)
+            utterance.volume = 0.8;
+            
+            // Ищем женский русский голос
+            const voices = speechSynthesis.getVoices();
+            const femaleVoice = voices.find(v => 
+                v.lang.includes('ru') && (v.name.toLowerCase().includes('female') || 
+                v.name.toLowerCase().includes('женский') ||
+                v.name.includes('Milena') ||
+                v.name.includes('Irina') ||
+                v.name.includes('Anna') ||
+                v.name.includes('Katya'))
+            ) || voices.find(v => v.lang.includes('ru'));
+            
+            if (femaleVoice) {
+                utterance.voice = femaleVoice;
+            }
+            
+            speechSynthesis.speak(utterance);
+        }
+        
+        // Загружаем голоса и говорим приветствие
+        if ('speechSynthesis' in window) {
+            // Голоса могут загружаться асинхронно
+            speechSynthesis.onvoiceschanged = () => {
+                setTimeout(speakWelcome, 1000);
+            };
+            // Пробуем сразу
+            setTimeout(speakWelcome, 1500);
+        }
+
         // Звук сбора обычного сокровища (дзинь)
         function playCollectSound() {
             if (!audioCtx) return;
@@ -612,6 +655,115 @@
             
             osc2.start(audioCtx.currentTime + 0.1);
             osc2.stop(audioCtx.currentTime + 0.4);
+        }
+
+        // === ФОНОВАЯ МУЗЫКА (джекпот стиль) ===
+        let bgMusicInterval = null;
+        let bgMusicGain = null;
+        let currentBPM = 120;
+        let beatIndex = 0;
+        
+        // Ноты для джекпот мелодии (пентатоника)
+        const jackpotNotes = [261.63, 293.66, 329.63, 392.00, 440.00, 523.25];
+        const bassNotes = [130.81, 146.83, 164.81, 196.00];
+        
+        function startBackgroundMusic() {
+            if (!audioCtx) return;
+            
+            // Громкость фона 50% от эффектов (эффекты 0.3, фон 0.15)
+            bgMusicGain = audioCtx.createGain();
+            bgMusicGain.gain.setValueAtTime(0.15, audioCtx.currentTime);
+            bgMusicGain.connect(audioCtx.destination);
+            
+            currentBPM = 120;
+            beatIndex = 0;
+            
+            playMusicBeat();
+            bgMusicInterval = setInterval(playMusicBeat, 60000 / currentBPM);
+        }
+        
+        function playMusicBeat() {
+            if (!audioCtx || !bgMusicGain) return;
+            
+            const now = audioCtx.currentTime;
+            
+            // Бас на каждый удар
+            if (beatIndex % 2 === 0) {
+                const bassOsc = audioCtx.createOscillator();
+                const bassGain = audioCtx.createGain();
+                bassOsc.connect(bassGain);
+                bassGain.connect(bgMusicGain);
+                
+                bassOsc.type = 'sine';
+                const bassNote = bassNotes[Math.floor(beatIndex / 2) % bassNotes.length];
+                bassOsc.frequency.setValueAtTime(bassNote, now);
+                
+                bassGain.gain.setValueAtTime(0.4, now);
+                bassGain.gain.exponentialRampToValueAtTime(0.01, now + 0.3);
+                
+                bassOsc.start(now);
+                bassOsc.stop(now + 0.3);
+            }
+            
+            // Мелодия джекпот
+            const melodySc = audioCtx.createOscillator();
+            const melodyGain = audioCtx.createGain();
+            melodySc.connect(melodyGain);
+            melodyGain.connect(bgMusicGain);
+            
+            melodySc.type = 'square';
+            const noteIndex = (beatIndex + Math.floor(Math.random() * 3)) % jackpotNotes.length;
+            melodySc.frequency.setValueAtTime(jackpotNotes[noteIndex], now);
+            
+            melodyGain.gain.setValueAtTime(0.2, now);
+            melodyGain.gain.exponentialRampToValueAtTime(0.01, now + 0.15);
+            
+            melodySc.start(now);
+            melodySc.stop(now + 0.15);
+            
+            // Перкуссия (шейкер)
+            if (beatIndex % 4 === 2) {
+                const bufferSize = audioCtx.sampleRate * 0.05;
+                const buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
+                const output = buffer.getChannelData(0);
+                for (let i = 0; i < bufferSize; i++) {
+                    output[i] = (Math.random() * 2 - 1) * (1 - i / bufferSize);
+                }
+                
+                const shaker = audioCtx.createBufferSource();
+                shaker.buffer = buffer;
+                const shakerGain = audioCtx.createGain();
+                shaker.connect(shakerGain);
+                shakerGain.connect(bgMusicGain);
+                shakerGain.gain.setValueAtTime(0.15, now);
+                
+                shaker.start(now);
+            }
+            
+            beatIndex++;
+        }
+        
+        // Ускоряем музыку на последних 10 секундах
+        function intensifyMusic() {
+            if (!bgMusicInterval) return;
+            
+            clearInterval(bgMusicInterval);
+            currentBPM = 180; // Ускоряем темп!
+            
+            // Увеличиваем громкость
+            if (bgMusicGain) {
+                bgMusicGain.gain.setValueAtTime(0.22, audioCtx.currentTime);
+            }
+            
+            bgMusicInterval = setInterval(playMusicBeat, 60000 / currentBPM);
+        }
+        
+        function stopBackgroundMusic() {
+            if (bgMusicInterval) {
+                clearInterval(bgMusicInterval);
+                bgMusicInterval = null;
+            }
+            bgMusicGain = null;
         }
 
         // Звук взрыва динамита
@@ -738,6 +890,10 @@
         // Game settings
         const GAME_DURATION = 30;    // 30 секунд на раунд
         const COMBO_MULTIPLIER = 0.5; // +50% за каждый комбо уровень
+        
+        // Определяем мобильное устройство и масштаб
+        const isMobile = window.innerWidth <= 768 || 'ontouchstart' in window;
+        const sizeScale = isMobile ? 0.5 : 1.0; // 50% размер на мобильных
 
         // Game state
         let gameRunning = false;
@@ -787,7 +943,7 @@
                 
                 this.x = Math.random() * (canvas.width - 100) + 50;
                 this.y = canvas.height + 50;
-                this.size = this.type.size;
+                this.size = this.type.size * sizeScale; // Уменьшаем на мобильных
                 this.rotation = 0;
                 this.rotationSpeed = (Math.random() - 0.5) * 0.2;
                 
@@ -1009,11 +1165,11 @@
                 const prevPoint = slicePoints[slicePoints.length - 2];
                 const angle = Math.atan2(lastPoint.y - prevPoint.y, lastPoint.x - prevPoint.x);
                 ctx.rotate(angle + Math.PI / 4);
-            } else {
-                ctx.rotate(-Math.PI / 4); // Угол покоя
             }
+            // В покое - вертикально (без поворота)
             
-            ctx.font = '50px Arial';
+            const pickaxeSize = isMobile ? 30 : 50; // Меньше на мобильных
+            ctx.font = `${pickaxeSize}px Arial`;
             ctx.textAlign = 'center';
             ctx.textBaseline = 'middle';
             
@@ -1209,6 +1365,9 @@
             // Инициализируем звук при первом взаимодействии
             initAudio();
             
+            // Запускаем фоновую музыку
+            startBackgroundMusic();
+            
             document.getElementById('menu').style.display = 'none';
             document.getElementById('gameOver').style.display = 'none';
             document.getElementById('timer').classList.remove('warning');
@@ -1238,6 +1397,11 @@
                 timeLeft--;
                 updateTimer();
                 
+                // Ускоряем музыку на последних 10 секундах!
+                if (timeLeft === 10) {
+                    intensifyMusic();
+                }
+                
                 if (timeLeft <= 0) {
                     endGame();
                 }
@@ -1252,6 +1416,9 @@
             clearInterval(gameTimer);
             canvas.classList.remove('playing');
             showCursor = false;
+            
+            // Останавливаем музыку
+            stopBackgroundMusic();
             
             // Сохраняем лучший результат
             if (money > bestMoney) {
