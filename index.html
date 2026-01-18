@@ -104,6 +104,18 @@
             border: 2px solid rgba(255, 255, 255, 0.2);
         }
 
+        /* Адаптив для мобильных */
+        @media (max-width: 768px) {
+            .stat-box {
+                padding: 8px 12px;
+                border-radius: 10px;
+            }
+            .stat-row {
+                font-size: 14px !important;
+                gap: 5px;
+            }
+        }
+
         .stat-row {
             display: flex;
             align-items: center;
@@ -278,6 +290,8 @@
             font-size: 36px;
             font-weight: bold;
             margin-bottom: 20px;
+            text-align: center;
+            width: 100%;
         }
 
         .earnings-box {
@@ -387,6 +401,18 @@
             padding: 4px;
             z-index: 10;
             box-shadow: 0 0 15px rgba(0, 0, 0, 0.5);
+        }
+
+        /* Таймер на мобильных — меньше и ниже */
+        @media (max-width: 768px) {
+            #timerContainer {
+                top: 85px;
+                width: 150px;
+                height: 20px;
+            }
+            #timerText {
+                font-size: 12px;
+            }
         }
 
         #timerBar {
