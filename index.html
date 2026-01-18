@@ -1120,7 +1120,7 @@
         // Определяем мобильное устройство и масштаб
         const isMobile = window.innerWidth <= 768 || 'ontouchstart' in window;
         const sizeScale = isMobile ? 0.375 : 0.8; // 37.5% на мобильных (-25%), 80% на ПК
-        const speedScale = isMobile ? 0.7 : 1.0; // 70% скорости на мобильных (-30%)
+        const speedScale = isMobile ? 0.875 : 1.0; // 87.5% скорости на мобильных (+25% от 70%)
 
         // Game state
         let gameRunning = false;
