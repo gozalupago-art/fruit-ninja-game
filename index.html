@@ -29,30 +29,31 @@
             background: transparent;
         }
 
-        /* Фоновый слой с картинкой */
+        /* Тёмный градиентный фон */
         #backgroundLayer {
             position: absolute;
             top: 0;
             left: 0;
             right: 0;
             bottom: 0;
-            background-color: #0d1a2d;
+            background: linear-gradient(135deg, #0a1628 0%, #1a2a4a 50%, #0d1a2d 100%);
             z-index: 0;
         }
 
-        /* Логотип по центру */
+        /* Логотип по центру с размытием */
         #backgroundLayer::before {
             content: '';
             position: absolute;
             top: 50%;
             left: 50%;
             transform: translate(-50%, -50%);
-            width: 50vmin;
-            height: 50vmin;
-            background-image: url('Copilot_20260118_102330.png');
+            width: 45%;
+            height: 45%;
+            background-image: url('logo-38P8k8zKK3pGt45XSUNemUepwsN.png');
             background-size: contain;
             background-position: center;
             background-repeat: no-repeat;
+            filter: blur(3px);
             opacity: 0.35;
             z-index: 1;
         }
