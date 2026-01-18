@@ -677,8 +677,22 @@
                 </div>
             </div>
             
-            <button class="menu-btn" onclick="startGame()">🔄 ЕЩЁ РАЗ</button>
+            <button class="menu-btn" onclick="showBrokenPickaxe()">🔄 ЕЩЁ РАЗ</button>
             <button class="menu-btn secondary" onclick="claimReward()">💰 ЗАБРАТЬ</button>
+        
+        <!-- Модальное окно сломанной кирки -->
+        <div id="brokenPickaxeModal" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.9); z-index: 200; justify-content: center; align-items: center; flex-direction: column; padding: 20px;">
+            <div style="text-align: center; max-width: 320px;">
+                <div style="font-size: 60px; margin-bottom: 15px;">⛏️💔</div>
+                <h2 style="color: #ff6b6b; font-size: 22px; margin-bottom: 15px;">КИРКА СЛОМАНА!</h2>
+                <p style="color: #aaa; font-size: 14px; line-height: 1.5; margin-bottom: 20px;">
+                    Ваша кирка была сломана в прошлой игре.<br><br>
+                    Дождитесь восстановления через <b style="color: #ffd700;">24 часа</b><br>
+                    или активируйте <b style="color: #4cd137;">промокод</b> в боте!
+                </p>
+                <button class="menu-btn secondary" onclick="closeBrokenModal()">ПОНЯТНО</button>
+            </div>
+        </div>
         </div>
     </div>
 
@@ -1781,6 +1795,16 @@
             } else {
                 alert(`Награда: ${money.toFixed(2)} ₽ будет зачислена на ваш баланс!`);
             }
+        }
+
+        function showBrokenPickaxe() {
+            // Показываем модальное окно о сломанной кирке
+            document.getElementById('brokenPickaxeModal').style.display = 'flex';
+        }
+
+        function closeBrokenModal() {
+            // Закрываем модальное окно
+            document.getElementById('brokenPickaxeModal').style.display = 'none';
         }
 
         function gameLoop() {
