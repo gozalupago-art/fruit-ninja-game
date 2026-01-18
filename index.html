@@ -40,7 +40,7 @@
             z-index: 0;
         }
 
-        /* Логотип по центру с размытием */
+        /* Логотип по центру с размытием и пульсацией */
         #backgroundLayer::before {
             content: '';
             position: absolute;
@@ -56,6 +56,18 @@
             filter: blur(3px);
             opacity: 0.35;
             z-index: 1;
+            animation: logoPulse 4s ease-in-out infinite;
+        }
+
+        @keyframes logoPulse {
+            0%, 100% { 
+                transform: translate(-50%, -50%) scale(1);
+                opacity: 0.35;
+            }
+            50% { 
+                transform: translate(-50%, -50%) scale(1.05);
+                opacity: 0.45;
+            }
         }
 
         #gameCanvas {
@@ -144,6 +156,25 @@
             font-size: 48px;
             margin-bottom: 10px;
             animation: bounce 1s infinite;
+        }
+
+        /* Логотип в меню */
+        .menu-logo {
+            width: 120px;
+            height: 120px;
+            object-fit: contain;
+            margin-bottom: 15px;
+            animation: menuLogoFloat 3s ease-in-out infinite;
+            filter: drop-shadow(0 0 20px rgba(100, 150, 255, 0.5));
+        }
+
+        @keyframes menuLogoFloat {
+            0%, 100% { 
+                transform: translateY(0) scale(1);
+            }
+            50% { 
+                transform: translateY(-10px) scale(1.05);
+            }
         }
 
         @keyframes bounce {
@@ -484,7 +515,7 @@
         <div id="combo"></div>
 
         <div id="menu">
-            <div class="menu-title">💰🔥</div>
+            <img src="ЛОГО.png" alt="Логотип" class="menu-logo">
             <h1 style="color: white; font-size: 28px; margin-bottom: 5px;">ЗОЛОТАЯ ЛИХОРАДКА</h1>
             <p class="menu-subtitle">Лови сокровища — зарабатывай рубли!</p>
             
