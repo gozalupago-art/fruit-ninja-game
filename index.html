@@ -20,13 +20,18 @@
             min-height: 100vh;
             overflow: hidden;
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            position: relative;
         }
 
-        /* Фоновая картинка с размытием */
-        body::before {
-            content: '';
-            position: fixed;
+        #gameContainer {
+            position: relative;
+            width: 100vw;
+            height: 100vh;
+            background: transparent;
+        }
+
+        /* Фоновый слой с картинкой */
+        #backgroundLayer {
+            position: absolute;
             top: 0;
             left: 0;
             right: 0;
@@ -37,31 +42,27 @@
             background-repeat: no-repeat;
             filter: blur(4px);
             opacity: 0.6;
-            z-index: -2;
+            z-index: 0;
         }
 
-        /* Затемняющий слой поверх фона */
-        body::after {
+        /* Затемнение поверх фона */
+        #backgroundLayer::after {
             content: '';
-            position: fixed;
+            position: absolute;
             top: 0;
             left: 0;
             right: 0;
             bottom: 0;
             background: rgba(0, 0, 0, 0.4);
-            z-index: -1;
-        }
-
-        #gameContainer {
-            position: relative;
-            width: 100vw;
-            height: 100vh;
         }
 
         #gameCanvas {
             display: block;
             width: 100%;
             height: 100%;
+            background: transparent;
+            position: relative;
+            z-index: 1;
         }
 
         #gameCanvas.playing {
@@ -455,6 +456,8 @@
 </head>
 <body>
     <div id="gameContainer">
+        <!-- Фоновый слой -->
+        <div id="backgroundLayer"></div>
         <canvas id="gameCanvas"></canvas>
         
         <div id="ui">
