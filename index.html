@@ -677,7 +677,7 @@
                 </div>
             </div>
             
-            <button class="menu-btn" onclick="showBrokenPickaxe()">🔄 ЕЩЁ РАЗ</button>
+            <button id="playAgainBtn" class="menu-btn" onclick="showBrokenPickaxe()">🔄 ЕЩЁ РАЗ</button>
             <button class="menu-btn secondary" onclick="claimReward()">💰 ЗАБРАТЬ</button>
         
         <!-- Модальное окно сломанной кирки -->
@@ -687,7 +687,8 @@
                 <h2 style="color: #ff6b6b; font-size: 22px; margin-bottom: 15px;">КИРКА СЛОМАНА!</h2>
                 <p style="color: #aaa; font-size: 14px; line-height: 1.5; margin-bottom: 20px;">
                     Ваша кирка была сломана в прошлой игре.<br><br>
-                    Дождитесь восстановления через <b style="color: #ffd700;">24 часа</b><br>
+                    Дождитесь восстановления через<br>
+                    <b id="countdownTimer" style="color: #ffd700; font-size: 24px;">00:00:00</b><br><br>
                     или активируйте <b style="color: #4cd137;">промокод</b> в боте!
                 </p>
                 <button class="menu-btn secondary" onclick="closeBrokenModal()">ПОНЯТНО</button>
@@ -715,6 +716,20 @@
             if (tg.disableVerticalSwipes) {
                 tg.disableVerticalSwipes();
             }
+        }
+        
+        // Проверяем режим промокода (для новичков - скрываем кнопку "ЕЩЁ РАЗ")
+        const urlParams = new URLSearchParams(window.location.search);
+        const isPromoMode = urlParams.get('promo') === '1';
+        
+        if (isPromoMode) {
+            // Скрываем кнопку "ЕЩЁ РАЗ" после загрузки страницы
+            document.addEventListener('DOMContentLoaded', () => {
+                const playAgainBtn = document.getElementById('playAgainBtn');
+                if (playAgainBtn) {
+                    playAgainBtn.style.display = 'none';
+                }
+            });
         }
 
         // === ЗВУКОВАЯ СИСТЕМА ===
@@ -1781,6 +1796,9 @@
         }
 
         function claimReward() {
+            // Сохраняем время последней игры
+            localStorage.setItem('lastGameTime', Date.now().toString());
+            
             // Отправляем результат в Telegram бот
             if (tg) {
                 const data = {
@@ -1797,14 +1815,49 @@
             }
         }
 
+        let countdownInterval = null;
+
         function showBrokenPickaxe() {
             // Показываем модальное окно о сломанной кирке
             document.getElementById('brokenPickaxeModal').style.display = 'flex';
+            startCountdown();
+        }
+
+        function startCountdown() {
+            // Получаем время последней игры
+            const lastGameTime = parseInt(localStorage.getItem('lastGameTime') || '0');
+            const cooldownMs = 24 * 60 * 60 * 1000; // 24 часа
+            
+            // Очищаем предыдущий интервал
+            if (countdownInterval) clearInterval(countdownInterval);
+            
+            function updateTimer() {
+                const now = Date.now();
+                const elapsed = now - lastGameTime;
+                const remaining = cooldownMs - elapsed;
+                
+                if (remaining <= 0) {
+                    document.getElementById('countdownTimer').textContent = '00:00:00';
+                    clearInterval(countdownInterval);
+                    return;
+                }
+                
+                const hours = Math.floor(remaining / (1000 * 60 * 60));
+                const minutes = Math.floor((remaining % (1000 * 60 * 60)) / (1000 * 60));
+                const seconds = Math.floor((remaining % (1000 * 60)) / 1000);
+                
+                document.getElementById('countdownTimer').textContent = 
+                    `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+            }
+            
+            updateTimer();
+            countdownInterval = setInterval(updateTimer, 1000);
         }
 
         function closeBrokenModal() {
-            // Закрываем модальное окно
+            // Закрываем модальное окно и останавливаем таймер
             document.getElementById('brokenPickaxeModal').style.display = 'none';
+            if (countdownInterval) clearInterval(countdownInterval);
         }
 
         function gameLoop() {
