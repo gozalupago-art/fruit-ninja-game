@@ -37,15 +37,26 @@
             right: 0;
             bottom: 0;
             background-image: url('Copilot_20260118_102330.png');
-            background-size: cover;
-            background-position: center;
+            background-size: 60%;
+            background-position: center center;
             background-repeat: no-repeat;
-            filter: blur(4px);
-            opacity: 0.6;
+            opacity: 0.25;
             z-index: 0;
         }
 
-        /* Затемнение поверх фона */
+        /* Градиентный оверлей для атмосферы */
+        #backgroundLayer::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: radial-gradient(ellipse at center, transparent 0%, rgba(10, 15, 30, 0.7) 70%, rgba(5, 10, 20, 0.95) 100%);
+            z-index: 1;
+        }
+
+        /* Красивая виньетка по краям */
         #backgroundLayer::after {
             content: '';
             position: absolute;
@@ -53,7 +64,10 @@
             left: 0;
             right: 0;
             bottom: 0;
-            background: rgba(0, 0, 0, 0.4);
+            background: 
+                linear-gradient(135deg, rgba(0, 100, 200, 0.1) 0%, transparent 50%),
+                linear-gradient(315deg, rgba(100, 0, 150, 0.1) 0%, transparent 50%);
+            z-index: 2;
         }
 
         #gameCanvas {
