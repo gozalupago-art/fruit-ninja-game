@@ -374,29 +374,102 @@
             color: #4cd137;
         }
 
-        /* Таймер игры */
-        #timer {
+        /* Прогресс-бар времени */
+        #timerContainer {
             position: absolute;
-            top: 80px;
+            top: 75px;
             left: 50%;
             transform: translateX(-50%);
+            width: 200px;
+            height: 24px;
             background: rgba(0, 0, 0, 0.6);
-            padding: 8px 20px;
-            border-radius: 20px;
-            color: white;
-            font-size: 18px;
-            font-weight: bold;
+            border-radius: 12px;
+            padding: 4px;
             z-index: 10;
+            box-shadow: 0 0 15px rgba(0, 0, 0, 0.5);
         }
 
-        #timer.warning {
-            color: #ff6b6b;
-            animation: pulse 0.5s infinite;
+        #timerBar {
+            height: 100%;
+            width: 100%;
+            border-radius: 8px;
+            background: linear-gradient(90deg, #4cd137, #7bed9f);
+            transition: width 0.3s ease, background 0.5s ease;
+            box-shadow: 0 0 10px rgba(76, 209, 55, 0.6);
         }
 
-        @keyframes pulse {
-            0%, 100% { transform: translateX(-50%) scale(1); }
-            50% { transform: translateX(-50%) scale(1.1); }
+        #timerBar.warning {
+            background: linear-gradient(90deg, #ffa502, #ff6348);
+            box-shadow: 0 0 15px rgba(255, 165, 2, 0.8);
+            animation: timerPulse 0.5s infinite;
+        }
+
+        #timerBar.danger {
+            background: linear-gradient(90deg, #ff4757, #ff3838);
+            box-shadow: 0 0 20px rgba(255, 71, 87, 0.9);
+            animation: timerPulse 0.3s infinite;
+        }
+
+        #timerText {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: white;
+            font-size: 14px;
+            font-weight: bold;
+            text-shadow: 0 0 5px rgba(0, 0, 0, 0.8);
+        }
+
+        @keyframes timerPulse {
+            0%, 100% { transform: scaleY(1); }
+            50% { transform: scaleY(1.1); }
+        }
+
+        /* Блестящий след за киркой */
+        .sparkle-trail {
+            position: absolute;
+            width: 8px;
+            height: 8px;
+            background: radial-gradient(circle, #ffd700 0%, #ffaa00 50%, transparent 100%);
+            border-radius: 50%;
+            pointer-events: none;
+            animation: sparkleTrail 0.6s ease-out forwards;
+            z-index: 45;
+        }
+
+        @keyframes sparkleTrail {
+            0% { 
+                opacity: 1; 
+                transform: scale(1);
+            }
+            100% { 
+                opacity: 0; 
+                transform: scale(0) translateY(-20px);
+            }
+        }
+
+        /* Анимация появления предметов */
+        .item-spawn-flash {
+            position: absolute;
+            width: 80px;
+            height: 80px;
+            background: radial-gradient(circle, rgba(255, 255, 255, 0.8) 0%, rgba(255, 215, 0, 0.4) 40%, transparent 70%);
+            border-radius: 50%;
+            pointer-events: none;
+            animation: spawnFlash 0.4s ease-out forwards;
+            z-index: 40;
+        }
+
+        @keyframes spawnFlash {
+            0% { 
+                opacity: 1; 
+                transform: translate(-50%, -50%) scale(0.3);
+            }
+            100% { 
+                opacity: 0; 
+                transform: translate(-50%, -50%) scale(1.5);
+            }
         }
 
         /* Взрыв с волной (для динамита) */
@@ -511,13 +584,16 @@
             </div>
         </div>
 
-        <div id="timer">⏱️ 30</div>
+        <div id="timerContainer">
+            <div id="timerBar"></div>
+            <span id="timerText">30</span>
+        </div>
         <div id="combo"></div>
 
         <div id="menu">
             <img src="ЛОГО.png" alt="Логотип" class="menu-logo">
-            <h1 style="color: white; font-size: 28px; margin-bottom: 5px;">ЗОЛОТАЯ ЛИХОРАДКА</h1>
-            <p class="menu-subtitle">Лови сокровища — зарабатывай рубли!</p>
+            <h1 style="color: white; font-size: 26px; margin-bottom: 5px;">💰ЗОЛОТАЯ ЛИХОРАДКА🧨</h1>
+            <p class="menu-subtitle">Лови сокровища — зарабатывай рубли!<br>Игра доступна раз в сутки или по промокоду!</p>
             
             <div class="rewards-table">
                 <div class="rewards-title">💎 НАГРАДЫ ЗА СОКРОВИЩА</div>
@@ -1308,8 +1384,29 @@
             if (slicePoints.length > 20) {
                 slicePoints.shift();
             }
+            
+            // Блестящий след за киркой
+            if (Math.random() < 0.4) {
+                createSparkleTrail(pos.x, pos.y);
+            }
 
             checkCollisions(pos.x, pos.y);
+        }
+        
+        // Создание блёстки следа
+        function createSparkleTrail(x, y) {
+            const sparkle = document.createElement('div');
+            sparkle.className = 'sparkle-trail';
+            sparkle.style.left = `${x + (Math.random() - 0.5) * 20}px`;
+            sparkle.style.top = `${y + (Math.random() - 0.5) * 20}px`;
+            
+            // Случайный размер
+            const size = 4 + Math.random() * 8;
+            sparkle.style.width = `${size}px`;
+            sparkle.style.height = `${size}px`;
+            
+            document.getElementById('gameContainer').appendChild(sparkle);
+            setTimeout(() => sparkle.remove(), 600);
         }
 
         function handleEnd() {
@@ -1468,11 +1565,22 @@
         }
 
         function updateTimer() {
-            const timerEl = document.getElementById('timer');
-            timerEl.textContent = `⏱️ ${timeLeft}`;
+            const timerBar = document.getElementById('timerBar');
+            const timerText = document.getElementById('timerText');
             
-            if (timeLeft <= 10) {
-                timerEl.classList.add('warning');
+            // Обновляем текст
+            timerText.textContent = timeLeft;
+            
+            // Обновляем ширину бара
+            const percentage = (timeLeft / GAME_DURATION) * 100;
+            timerBar.style.width = `${percentage}%`;
+            
+            // Меняем цвет в зависимости от времени
+            timerBar.classList.remove('warning', 'danger');
+            if (timeLeft <= 5) {
+                timerBar.classList.add('danger');
+            } else if (timeLeft <= 10) {
+                timerBar.classList.add('warning');
             }
         }
 
@@ -1489,9 +1597,26 @@
             const count = Math.floor(Math.random() * 2) + 1;
             for (let i = 0; i < count; i++) {
                 setTimeout(() => {
-                    if (gameRunning) fruits.push(new Fruit());
+                    if (gameRunning) {
+                        const fruit = new Fruit();
+                        fruits.push(fruit);
+                        // Вспышка при появлении
+                        createSpawnFlash(fruit.x, fruit.y, fruit.type.color);
+                    }
                 }, i * 150);
             }
+        }
+        
+        // Эффект вспышки при появлении предмета
+        function createSpawnFlash(x, y, color) {
+            const flash = document.createElement('div');
+            flash.className = 'item-spawn-flash';
+            flash.style.left = `${x}px`;
+            flash.style.top = `${y}px`;
+            flash.style.background = `radial-gradient(circle, rgba(255, 255, 255, 0.7) 0%, ${color}66 40%, transparent 70%)`;
+            
+            document.getElementById('gameContainer').appendChild(flash);
+            setTimeout(() => flash.remove(), 400);
         }
 
         function drawSliceTrail() {
