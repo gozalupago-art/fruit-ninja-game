@@ -680,8 +680,21 @@
         // Telegram Web App
         const tg = window.Telegram?.WebApp;
         if (tg) {
-            tg.expand();
             tg.ready();
+            tg.expand();
+            
+            // Принудительное расширение на ПК
+            setTimeout(() => tg.expand(), 100);
+            setTimeout(() => tg.expand(), 500);
+            
+            // Устанавливаем цвет хедера
+            tg.setHeaderColor('#0a1628');
+            tg.setBackgroundColor('#0a1628');
+            
+            // Отключаем закрытие свайпом вниз
+            if (tg.disableVerticalSwipes) {
+                tg.disableVerticalSwipes();
+            }
         }
 
         // === ЗВУКОВАЯ СИСТЕМА ===
