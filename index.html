@@ -1119,7 +1119,8 @@
         
         // Определяем мобильное устройство и масштаб
         const isMobile = window.innerWidth <= 768 || 'ontouchstart' in window;
-        const sizeScale = isMobile ? 0.5 : 0.8; // 50% на мобильных, 80% на ПК (-20%)
+        const sizeScale = isMobile ? 0.375 : 0.8; // 37.5% на мобильных (-25%), 80% на ПК
+        const speedScale = isMobile ? 0.7 : 1.0; // 70% скорости на мобильных (-30%)
 
         // Game state
         let gameRunning = false;
@@ -1172,7 +1173,7 @@
                 this.sliced = false;
                 this.opacity = 1;
                 
-                const baseSpeed = this.type.speed;
+                const baseSpeed = this.type.speed * speedScale;
                 
                 // Динамиты летят со всех сторон!
                 if (this.isBomb) {
