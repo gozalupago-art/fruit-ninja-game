@@ -36,24 +36,24 @@
             left: 0;
             right: 0;
             bottom: 0;
-            background: 
-                linear-gradient(135deg, rgba(15, 25, 50, 0.85) 0%, rgba(20, 35, 65, 0.75) 50%, rgba(15, 25, 50, 0.85) 100%),
-                url('Copilot_20260118_102330.png');
-            background-size: cover, 55%;
-            background-position: center, center;
-            background-repeat: no-repeat, no-repeat;
+            background-color: #0d1a2d;
             z-index: 0;
         }
 
-        /* Лёгкое свечение в центре */
-        #backgroundLayer::after {
+        /* Логотип по центру */
+        #backgroundLayer::before {
             content: '';
             position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: radial-gradient(ellipse at center, rgba(30, 80, 150, 0.15) 0%, transparent 60%);
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 50vmin;
+            height: 50vmin;
+            background-image: url('Copilot_20260118_102330.png');
+            background-size: contain;
+            background-position: center;
+            background-repeat: no-repeat;
+            opacity: 0.35;
             z-index: 1;
         }
 
