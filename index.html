@@ -1811,7 +1811,7 @@
             localStorage.setItem('lastGameTime', Date.now().toString());
             
             // Отправляем результат в Telegram бот
-            if (tg) {
+            if (tg && tg.sendData) {
                 const data = {
                     action: 'claim',
                     money: money,
@@ -1819,9 +1819,26 @@
                     maxCombo: maxCombo,
                     fruitStats: fruitStats,
                 };
-                tg.sendData(JSON.stringify(data));
-                tg.close();
+                
+                console.log('Отправка данных в бот:', data);
+                
+                try {
+                    // Отправляем данные
+                    tg.sendData(JSON.stringify(data));
+                    console.log('Данные отправлены успешно');
+                    
+                    // Закрываем Web App с небольшой задержкой, чтобы данные успели отправиться
+                    setTimeout(() => {
+                        if (tg && tg.close) {
+                            tg.close();
+                        }
+                    }, 500);
+                } catch (error) {
+                    console.error('Ошибка отправки данных:', error);
+                    alert(`Ошибка отправки данных. Награда: ${money.toFixed(2)} ₽ будет зачислена на ваш баланс!`);
+                }
             } else {
+                console.error('Telegram WebApp не доступен');
                 alert(`Награда: ${money.toFixed(2)} ₽ будет зачислена на ваш баланс!`);
             }
         }
@@ -1953,3 +1970,4 @@
     </script>
 </body>
 </html>
+
