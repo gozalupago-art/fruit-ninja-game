@@ -1717,6 +1717,19 @@
         }
 
         function startGame() {
+            // Отправляем событие начала игры в бот
+            if (tg && tg.sendData) {
+                try {
+                    const startData = {
+                        action: 'start'
+                    };
+                    tg.sendData(JSON.stringify(startData));
+                    console.log('Отправлено событие начала игры');
+                } catch (error) {
+                    console.error('Ошибка отправки события начала игры:', error);
+                }
+            }
+            
             // Инициализируем звук при первом взаимодействии
             initAudio();
             
@@ -1970,4 +1983,3 @@
     </script>
 </body>
 </html>
-
