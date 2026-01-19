@@ -1792,6 +1792,17 @@
             document.getElementById('finalCombo').textContent = `${maxCombo}x`;
             document.getElementById('finalAccuracy').textContent = `${accuracy}%`;
             document.getElementById('finalBest').textContent = `${bestMoney.toFixed(2)} ₽`;
+            
+            // Проверяем режим промокода - скрываем кнопку "ЕЩЁ РАЗ" если игра по промокоду
+            const urlParams = new URLSearchParams(window.location.search);
+            const isPromoMode = urlParams.get('promo') === '1';
+            const playAgainBtn = document.getElementById('playAgainBtn');
+            if (playAgainBtn && isPromoMode) {
+                playAgainBtn.style.display = 'none';
+            } else if (playAgainBtn && !isPromoMode) {
+                playAgainBtn.style.display = 'block';
+            }
+            
             document.getElementById('gameOver').style.display = 'flex';
         }
 
